@@ -1,0 +1,148 @@
+import random
+import speech_recognition as sr
+from googletrans import Translator
+import sounddevice as sd
+from scipy.io.wavfile import write
+
+# =========================
+# CONFIGURAÇÕES
+# =========================
+
+translator = Translator()
+recognizer = sr.Recognizer()
+
+points = 0
+errors = 0
+
+# =========================
+# PALAVRAS
+# =========================
+
+words_by_level = {
+    "fácil": ["gato", "cachorro", "maçã"],
+    "médio": ["escola", "janela", "amigo"],
+    "difícil": ["tecnologia", "informação", "universidade"]
+}
+
+# =========================
+# MENU
+# =========================
+
+print("================================")
+print("🎤 SPEAK RIGHT 🎤")
+print("================================")
+
+print("1 - Fácil")
+print("2 - Médio")
+print("3 - Difícil")
+
+choice = input("Escolha o nível: ")
+
+if choice == "1":
+    level = "fácil"
+
+elif choice == "2":
+    level = "médio"
+
+else:
+    level = "difícil"
+
+# =========================
+# LOOP DO JOGO
+# =========================
+
+while errors < 3:
+
+    # Palavra aleatória
+    word = random.choice(words_by_level[level])
+
+    # Traduzir
+    english_word = translator.translate(
+        word,
+        src="pt",
+        dest="en"
+    ).text.lower()
+
+    print("\n========================")
+    print("📚 Palavra:", word)
+    print("🗣️ Fale em inglês!")
+    print("========================")
+
+    # =========================
+    # GRAVAÇÃO
+    # =========================
+
+    fs = 44100
+    duration = 10
+
+    print("🎧 Gravando por 10 segundos...")
+
+    audio = sd.rec(
+        int(duration * fs),
+        samplerate=fs,
+        channels=1
+    )
+
+    sd.wait()
+
+    # Salvar áudio
+    write("gravacao.wav", fs, audio)
+
+    print("✅ Áudio salvo!")
+
+    # =========================
+    # RECONHECIMENTO
+    # =========================
+
+    try:
+
+        with sr.AudioFile("gravacao.wav") as source:
+
+            audio_data = recognizer.record(source)
+
+            recognized = recognizer.recognize_google(
+                audio_data,
+                language="en-US"
+            )
+
+            recognized = recognized.lower()
+
+        print("🗣️ Você falou:", recognized)
+
+        # Comparar
+        if recognized == english_word:
+
+            print("✅ Correto!")
+            points += 10
+
+        else:
+
+            print("❌ Errado!")
+            print("✔️ Correto:", english_word)
+
+            errors += 1
+
+    except:
+
+        print("😵 Não entendi!")
+        errors += 1
+
+    # =========================
+    # STATUS
+    # =========================
+
+    print("\n⭐ Pontos:", points)
+
+    lives = "❤️" * (3 - errors)
+
+    print("Vidas:", lives)
+
+# =========================
+# FIM
+# =========================
+
+print("\n========================")
+print("💀 GAME OVER 💀")
+print("========================")
+
+print("🏆 Pontuação final:", points)
